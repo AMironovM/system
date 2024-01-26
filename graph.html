@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+
+<head>
+
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="shortcut icon" href="/static/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/static/favicon-32x32.png" sizes="32x32">
+  <link rel="icon" type="image/png" href="/static/favicon-16x16.png" sizes="16x16">
+  <meta name="theme-color" content="#ffffff">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Система.</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"
+    integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <link rel="stylesheet" href="/graph.css">
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js" defer></script>
+  <script type='module' src='/graph.js' defer></script>
+</head>
+
+<body>
+
+  <dialog data-modal class="deal modal" id="dealModal">
+    <div>
+      <span class="dealLabel">Дата: </span>
+      <span id="dealDate"></span>
+      <button close-target="dealModal" class="close">&times;</button>
+    </div>
+    <div>
+      <span class="dealLabel">Заказчик: </span>
+      <span id="dealEmployer"></span>
+    </div>
+    <div>
+      <span class="dealLabel">Исполнитель: </span>
+      <span id="dealContractor"></span>
+    </div>
+    <div>
+      <span class="dealLabel">Предмет: </span>
+      <span id="dealObject"></span>
+    </div>
+    <div>
+      <span class="dealLabel">Сумма: </span>
+      <span id="dealSum"></span>
+    </div>
+    <div>
+      <span class="dealLabel">Описание: </span>
+      <span id="dealDescription"></span>
+    </div>
+  </dialog>
+
+  <dialog data-modal class="deal modal" id="newDealModal">
+    <div>
+      <button class="close">&times;</button>
+    </div>
+    <label for="newDealContractor">Исполнитель:</label>
+    <select id="newDealContractor" name="newDealContractor">
+
+    </select>
+    <br>
+    <br>
+    <button id="createDeal">Создать</button>
+  </dialog>
+
+  <dialog data-modal class="thought modal" id="thoughtModal">
+    <div>
+      <button class="close">&times;</button>
+    </div>
+
+    <input type="text" class='center noBorder' id="thoughtDescription" required placeholder="Краткое описание">
+
+    <fieldset id="thoughtChoiceGoodBad" class="noBorder">
+
+      <input type="radio" id="goodThought" name="thoughtGoodBad" value="good" checked />
+      <label for="goodThought">Приятная</label>
+
+      <input type="radio" id="badThought" name="thoughtGoodBad" value="bad" />
+      <label for="badThought">Неприятная</label>
+    </fieldset>
+
+    <fieldset id="thoughtState" class="noBorder">
+      <div>
+        <input type="radio" id="newThought" name="thoughtState" checked value="Пришла" />
+        <label for="newThought">Пришла</label>
+      </div>
+      <div>
+        <input type="radio" id="workedThrough" name="thoughtState" value="Проговорена" />
+        <label for="workedThrough">Проговорена</label>
+      </div>
+      <div>
+        <input type="radio" id="resolvedThought" name="thoughtState" value="Отпущена" />
+        <label for="resolvedThought">Отпущена</label>
+      </div>
+    </fieldset>
+    <br>
+    <br>
+    <button id="updateThought">Добавить</button>
+  </dialog>
+
+  <div id="wrapper">
+
+    
+
+    <div class="status" id="status"> <div class="lds-ring"><div></div><div></div><div></div><div></div></div>  <div class="hidden" id='statusText'></div> </div>
+    
+    <div class="status" id="topDateRange">  </div>
+
+    <div id="header">
+      <div id="settingsWindow">
+
+
+        <img class='logo' src="/static/logo.png" alt="">
+        <div id="logoRight">
+          <h1 class='logo' id="system">система.<span>рус</span></h1>
+          <div id="userNameLogo"></div>
+          <div class="rangeDiv" id="rangeDiv">
+            <input id="DateRange" type="range" name="" class="range" min=0 max=0 step=1 value=0> <button
+              id="startRange">&#9658;</button>
+            <button id="resetRange">STOP</button>
+
+            <label class="label-checkbox hidden">
+              <input id="focus_toggle" type="checkbox">
+              <span>Фокус</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth">
+        <div id="tg-login" class="hidden">
+          <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="SistemaRusBot"
+            data-size="large" data-onauth="onTelegramAuth(user)"></script>
+        </div>
+
+        <div id='logoutBlock' class="hidden">
+          <span id="username"></span>
+          <button id="logoutButton">Выйти</button>
+        </div>
+
+        <div id='rightSettings' class="hidden">
+          <div id='users_select' class="hidden"><label for="users_dropdown">Пользователь:</label>
+            <select id="users_dropdown" name="users_dropdown">
+            </select>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <div class="content" id="mynetwork"></div>
+    <div id="liveinternet"><a href="https://www.liveinternet.ru/stat/система.рус/" target="_blank"><img id="licnt4B65" width="88"
+      height="31" style="border:0"
+      title="LiveInternet: показано число просмотров за 24 часа, посетителей за 24 часа и за сегодня"
+      src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7" alt="" /></a></div>
+  </div>
+
+  <!--LiveInternet counter-->
+  <script>(function (d, s) {
+      d.getElementById("licnt4B65").src =
+      "https://counter.yadro.ru/hit?t14.14;r" + escape(d.referrer) +
+      ((typeof (s) == "undefined") ? "" : ";s" + s.width + "*" + s.height + "*" +
+        (s.colorDepth ? s.colorDepth : s.pixelDepth)) + ";u" + escape(d.URL) +
+      ";h" + escape(d.title.substring(0, 150)) + ";" + Math.random()
+    })
+      (document, screen)</script><!--/LiveInternet-->
+
+</body>
+
+
+</html>
