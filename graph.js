@@ -1061,7 +1061,7 @@ function drawCenterTree() {
             states.center.y = currentPosition.y
 
             nodes.add(newCenterNode)
-        }
+        } 
 
         addNode({ id: 'triangle', shape: 'triangleDown', imageSize: 65, x: states.center.x, y: states.center.y - 400, fixed: true, level: -2, mass: 15 })
         addNode({ id: 'inner_exit', label: 'Обороты', shape: 'box', x: states.center.x, y: states.center.y - 498, fixed: true, subType: 'outer', angle: 0, level: -2, mass: 15 })
