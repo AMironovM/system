@@ -1061,7 +1061,7 @@ function drawCenterTree() {
             states.center.y = currentPosition.y
 
             nodes.add(newCenterNode)
-        } 
+        }
 
         addNode({ id: 'triangle', shape: 'triangleDown', imageSize: 65, x: states.center.x, y: states.center.y - 400, fixed: true, level: -2, mass: 15 })
         addNode({ id: 'inner_exit', label: 'Обороты', shape: 'box', x: states.center.x, y: states.center.y - 498, fixed: true, subType: 'outer', angle: 0, level: -2, mass: 15 })
@@ -1093,25 +1093,25 @@ function drawCenterTree() {
     function addFilterNodes() {
 
         const level = -2
-        const centerCoordinates =  { x: states.center.x, y: states.center.y - 498 }
+        const centerCoordinates = { x: states.center.x, y: states.center.y - 498 }
 
-        let node = {id: 'toggleAlias', label: "ПСЕВДОНИМЫ", coordinates: getVectorCoordinates(-25, DISTANCE, centerCoordinates) }
+        let node = { id: 'toggleAlias', label: "ПСЕВДОНИМЫ", coordinates: getVectorCoordinates(-25, DISTANCE, centerCoordinates) }
         addFilterNode(node, settings.useNicknames, 'inner_exit')
-        
-        node = {id: 'toggleFocus', label: "ФОКУС", coordinates: getVectorCoordinates(25, DISTANCE, centerCoordinates) }
+
+        node = { id: 'toggleFocus', label: "ФОКУС", coordinates: getVectorCoordinates(25, DISTANCE, centerCoordinates) }
         addFilterNode(node, settings.focusMode, 'inner_exit')
 
         const moneyNodeCoordinates = getVectorCoordinates(0, DISTANCE / 2, centerCoordinates)
         addNode({ id: 'money', label: '$$$', fixed: true, coordinates: moneyNodeCoordinates, level: -2, mass: 15 })
         addEdge({ id1: 'money', id2: 'inner_exit' })
 
-        node = {id: 'topAll', label: "Все", coordinates: getVectorCoordinates(-12.5, DISTANCE, centerCoordinates) }
+        node = { id: 'topAll', label: "Все", coordinates: getVectorCoordinates(-12.5, DISTANCE, centerCoordinates) }
         addFilterNode(node, settings.filterByTop == 0, 'money')
 
-        node = {id: 'top10', label: "Топ 10", coordinates: getVectorCoordinates(0, DISTANCE, centerCoordinates) }
+        node = { id: 'top10', label: "Топ 10", coordinates: getVectorCoordinates(0, DISTANCE, centerCoordinates) }
         addFilterNode(node, settings.filterByTop == 10, 'money')
 
-        node = {id: 'top30', label: "Топ 30", coordinates: getVectorCoordinates(12.5, DISTANCE, centerCoordinates) }
+        node = { id: 'top30', label: "Топ 30", coordinates: getVectorCoordinates(12.5, DISTANCE, centerCoordinates) }
         addFilterNode(node, settings.filterByTop == 30, 'money')
 
         function addFilterNode(node, filterOn, parentNodeId) {
@@ -1122,7 +1122,7 @@ function drawCenterTree() {
             node.level = level
             node.mass = 15
             addNode(node)
-            addEdge({ id1: node.id, id2: parentNodeId})
+            addEdge({ id1: node.id, id2: parentNodeId })
         }
     }
 
