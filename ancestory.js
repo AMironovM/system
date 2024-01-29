@@ -6,7 +6,7 @@ import {
 
 const TREE_BRANCH_DISTANCE = 300
 const TREE_CHILD_BRANCH_DISTANCE = 500
-const X_OFFSET = 6000
+const X_OFFSET = 5000
 
 export function drawTree(ancestory) {
 
