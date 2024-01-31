@@ -519,7 +519,7 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
 
     drawExternalCloud()
 
-    
+
 
     fillContractors()
 
@@ -600,7 +600,7 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
 
     // addContragentDeals(pairs)
 
-    
+
 
     // if (stabilize) {
     //     network.moveTo({
@@ -1010,7 +1010,6 @@ function drawCenterTree() {
         } else {
             addCenterDeal(deal)
         }
-
     })
 
     addRestThoughts()
@@ -1449,10 +1448,7 @@ function addCenterDeal(deal) {
     }
 
     groups.forEach(group => {
-        let { id: newNodeId, isNew } = addGroupNode(group, { opacity: hidden ? 0.4 : 1, level, groupId: group.id, subType: 'group' })
-        if (isNew) {
-            addEdge({ id1: mostInnerNodeId, id2: newNodeId, direction: 'from' })
-        }
+        let { id: newNodeId, isNew } = addGroupNode(group, mostInnerNodeId, { opacity: hidden ? 0.4 : 1, level, groupId: group.id, subType: 'group' })
         mostInnerNodeId = newNodeId
         level++
     })
@@ -1645,10 +1641,7 @@ function addDelegatedDeals(delegated) {
     }
 
     groups.forEach(group => {
-        let { id: newNodeId, isNew } = addGroupNode(group, { opacity: hidden ? 0.4 : 1, level, groupId: group.id, subType: 'group' })
-        if (isNew) {
-            addEdge({ id1: mostInnerNodeId, id2: newNodeId, direction: 'from' })
-        }
+        let { id: newNodeId, isNew } = addGroupNode(group, mostInnerNodeId, { opacity: hidden ? 0.4 : 1, level, groupId: group.id, subType: 'group' })
         mostInnerNodeId = newNodeId
         level++
     })
@@ -1784,16 +1777,40 @@ function addDelegatedDeals(delegated) {
 
 }
 
-function addGroupNode(group, { ...additionalParams } = {}) {
+function addGroupNode(group, mostInnerNodeId, { ...additionalParams } = {}) {
 
     const label = group.name
     const nodeId = "group_" + group.id
+    let newNode
 
     if (group.image) {
-        return addNode({ id: nodeId, shape: 'image', label, image: group.image, fontSize: 24, imageSize: SIZES.NODE_IMAGE, ...additionalParams, })
+        newNode = addNode({ id: nodeId, shape: 'image', label, image: group.image, fontSize: 24, imageSize: SIZES.NODE_IMAGE, ...additionalParams, })
     } else {
-        return addNode({ id: nodeId, label, shape: 'box', ...additionalParams, })
+        newNode = addNode({ id: nodeId, label, shape: 'box', ...additionalParams, })
     }
+
+    if (newNode.isNew) {
+        let groupDeals = centerDeals.reduce((res, el) => {
+            if ((el.parent?.id == group.id || el.parent?.parent?.id == group.id) && !el.deals) {
+                res.push(el)
+            }
+
+            if ('deals' in el) {
+                let delegated = el.deals.find(deal => {
+                    return (deal.contractor.id == settings.userDrawnId || deal.employer.id == settings.userDrawnId)
+                })
+                res.push(delegated)
+            }
+
+            return res
+        }, [])
+
+        const edgeLabel = getEdgeLabels(groupDeals, settings.userDrawnId)
+
+        addEdge({ id1: newNode.id, id2: mostInnerNodeId, label: edgeLabel.contractorLabel, direction: 'to' })
+    }
+
+    return newNode
 
 }
 
@@ -2261,7 +2278,11 @@ export function addEdge({ dashes = false, id1, id2, label = '', smooth = undefin
     }
 }
 
-function getEdgeLabels(deals) {
+function getEdgeLabels(deals, resourseId) {
+
+    if (!resourseId) {
+        resourseId = deals[0].employer.id
+    }
 
     let employerSum = 0
     let contractorSum = 0
@@ -2284,18 +2305,18 @@ function getEdgeLabels(deals) {
 
         dealTransfer = getDealTransfer(deal)
 
-        employerSum += dealTransfer.employerSum
-        contractorSum += dealTransfer.contractorSum
+        employerSum += (deal.employer.id == resourseId ? dealTransfer.employerSum : dealTransfer.contractorSum)
+        contractorSum += (deal.employer.id !== resourseId ? dealTransfer.employerSum : dealTransfer.contractorSum)
 
-        employerHearts += dealTransfer.employerHearts
-        contractorHearts += dealTransfer.contractorHearts
+        employerHearts += (deal.employer.id == resourseId ? dealTransfer.employerHearts : dealTransfer.contractorHearts)
+        contractorHearts += (deal.employer.id !== resourseId ? dealTransfer.employerHearts : dealTransfer.contractorHearts)
 
         if (!(deal.currency.id in currencies)) {
             currencies[deal.currency.id] = { symbol: deal.currency.symbol, contractor: 0, employer: 0 }
         }
 
-        currencies[deal.currency.id].employer += dealTransfer.employerSumCurrency
-        currencies[deal.currency.id].contractor += dealTransfer.contractorSumCurrency
+        currencies[deal.currency.id].employer += (deal.employer.id == resourseId ? dealTransfer.employerSumCurrency : dealTransfer.contractorSumCurrency)
+        currencies[deal.currency.id].contractor += (deal.employer.id !== resourseId ? dealTransfer.employerSumCurrency : dealTransfer.contractorSumCurrency)
 
 
     })
@@ -2367,68 +2388,71 @@ function getEdgeLabels(deals) {
     }
 
     return { executionState, paymentState, description, employerLabel, contractorLabel, employerSum, contractorSum }
-}
 
-function getDealTransfer(deal) {
-    let executionPercent = 0
-    let paymentPercent = 0
+    function getDealTransfer(deal) {
+        let executionPercent = 0
+        let paymentPercent = 0
 
-    let earliestPaymentDate
-    let earliestExecutionDate
+        let earliestPaymentDate
+        let earliestExecutionDate
 
-    const SumWithProfit = deal.sum + deal.profitSum
-    const CurrencySumWithProfit = deal.currency.value + deal.currency.profit
+        const SumWithProfit = deal.sum + deal.profitSum
+        const CurrencySumWithProfit = deal.currency.value + deal.currency.profit
 
-    deal.stages.forEach((stage) => {
-        if (!states.ignoreDates || settings.focusMode) {
+        deal.stages.forEach((stage) => {
+            if (!states.ignoreDates || settings.focusMode) {
 
-            const dealRange = getDealDateRange(deal)
+                const dealRange = getDealDateRange(deal)
 
-            if (stage.date && stage.date < dealRange.start && stage.planDate && stage.planDate < dealRange.start
-            ) {
-                return
+                if (stage.date && stage.date < dealRange.start && stage.planDate && stage.planDate < dealRange.start
+                ) {
+                    return
+                }
+
+                if (stage.date && stage.date > dealRange.end && stage.planDate && stage.planDate > dealRange.end
+                ) {
+                    return
+                }
             }
 
-            if (stage.date && stage.date > dealRange.end && stage.planDate && stage.planDate > dealRange.end
-            ) {
-                return
+            if (stage.stage === 'Оплата') {
+                paymentPercent += stage.percent
+                if (!earliestPaymentDate || earliestPaymentDate < new Date(stage.planDate)) {
+                    earliestPaymentDate = new Date(stage.planDate)
+                }
+            } else if (stage.stage === 'Исполнение') {
+                executionPercent += stage.percent
+                if (!earliestExecutionDate || earliestExecutionDate < new Date(stage.planDate)) {
+                    earliestExecutionDate = new Date(stage.planDate)
+                }
             }
+        })
+
+        let employerSum = deal.sum * (paymentPercent / 100)
+        let employerSumCurrency = deal.currency.value * (paymentPercent / 100)
+        let contractorSum = 0
+        let contractorSumCurrency = 0
+        let employerHearts = 0
+        let contractorHearts = 0
+
+        if (deal.employerGrateful) {
+            employerHearts++
+        }
+        if (deal.contractorGrateful && !deal.hasObject) {
+            contractorHearts++
         }
 
-        if (stage.stage === 'Оплата') {
-            paymentPercent += stage.percent
-            if (!earliestPaymentDate || earliestPaymentDate < new Date(stage.planDate)) {
-                earliestPaymentDate = new Date(stage.planDate)
-            }
-        } else if (stage.stage === 'Исполнение') {
-            executionPercent += stage.percent
-            if (!earliestExecutionDate || earliestExecutionDate < new Date(stage.planDate)) {
-                earliestExecutionDate = new Date(stage.planDate)
-            }
+        if (deal.Type === 'Инвестиционная') {
+            contractorSum = SumWithProfit * (executionPercent / 100)
+            contractorSumCurrency = CurrencySumWithProfit * (executionPercent / 100)
         }
-    })
 
-    let employerSum = deal.sum * (paymentPercent / 100)
-    let employerSumCurrency = deal.currency.value * (paymentPercent / 100)
-    let contractorSum = 0
-    let contractorSumCurrency = 0
-    let employerHearts = 0
-    let contractorHearts = 0
-
-    if (deal.employerGrateful) {
-        employerHearts++
-    }
-    if (deal.contractorGrateful && !deal.hasObject) {
-        contractorHearts++
+        return { employerHearts, contractorHearts, employerSum, employerSumCurrency, contractorSum, contractorSumCurrency, paymentPercent, executionPercent, earliestPaymentDate, earliestExecutionDate }
     }
 
-    if (deal.Type === 'Инвестиционная') {
-        contractorSum = SumWithProfit * (executionPercent / 100)
-        contractorSumCurrency = CurrencySumWithProfit * (executionPercent / 100)
-    }
 
-    return { employerHearts, contractorHearts, employerSum, employerSumCurrency, contractorSum, contractorSumCurrency, paymentPercent, executionPercent, earliestPaymentDate, earliestExecutionDate }
 }
+
 
 function getPairWithMostTransactions(pairs) {
     let topPair
@@ -2886,11 +2910,11 @@ function handleNodeClick(nodeId, clickX, clickY) {
         onfilterTopToggle(10)
     } else if (nodeId === 'topAll') {
         onfilterTopToggle(0)
-    } else if (nodeId === 'addSecondAncestors'){
+    } else if (nodeId === 'addSecondAncestors') {
         onaddSecondAncestorsToggle()
     }
 
-    function onaddSecondAncestorsToggle(){
+    function onaddSecondAncestorsToggle() {
         settings.addSecondAncestors = !settings.addSecondAncestors
         updatePairs()
     }
