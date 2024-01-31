@@ -509,6 +509,9 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
         x.resourses = []
     })
 
+    totals.gave = 0
+    totals.received = 0
+
     filterDealsByDate(centerDeals)
 
     if (settings.filterByTop) {
@@ -518,8 +521,6 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
     drawCenterTree()
 
     drawExternalCloud()
-
-
 
     fillContractors()
 
@@ -543,9 +544,6 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
     // if (user.id === settings.userDrawnId) {
     //     addExternalDeals(pairs)
     // }
-
-    totals.gave = 0
-    totals.received = 0
 
     drawTree(ancestory)
 
