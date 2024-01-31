@@ -79,7 +79,8 @@ export const settings = {
     userDrawnName: undefined,
     userImage: undefined,
     date: new Date(),
-    partnerId: ''
+    partnerId: '',
+    addSecondAncestors: false
 }
 
 export const states = {
@@ -376,7 +377,7 @@ async function updatePairs(event) {
 
     statusElement.classList.remove('hidden')
 
-    const data = await postJSON('getGraph', { test: true, event, authKey, user_id: user.id, drawn_user_id: settings.userDrawnId })
+    const data = await postJSON('getGraph', { addSecondAncestors: settings.addSecondAncestors, test: true, event, authKey, user_id: user.id, drawn_user_id: settings.userDrawnId })
 
     if (!('graph' in data.result)) {
         return
@@ -499,7 +500,7 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
 
     graph = structuredClone(rawGraph)
     centerDeals = graph.centerDeals
-    ancestory = graph.ancestory
+    ancestory = graph.ancestory2
     thoughts = graph.thoughts
     // thoughts = filterThoughts()
 
@@ -517,6 +518,8 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
     drawCenterTree()
 
     drawExternalCloud()
+
+    
 
     fillContractors()
 
@@ -543,6 +546,8 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
 
     totals.gave = 0
     totals.received = 0
+
+    drawTree(ancestory)
 
     // const centerTree = { deals: [], groups: [], dealsCount: 0 }
     // let last_resourse
@@ -595,19 +600,7 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
 
     // addContragentDeals(pairs)
 
-
-    const totalsLabel =
-        '<b>Обороты</b>\n\n' +
-        'Получил ' +
-        Math.round(totals.received).toString() +
-        '$\n' +
-        'Отдал ' +
-        Math.round(totals.gave).toString() +
-        '$'
-
-    nodes.update({ id: 'inner_exit', label: totalsLabel })
-
-    drawTree(ancestory)
+    
 
     // if (stabilize) {
     //     network.moveTo({
@@ -731,7 +724,7 @@ async function updateGraph(timeToFullRender = 5000) {
         })
 
         if (!foundEdge) {
-            edgeToAdd.push({ ...newEdge, id: undefined })
+            edgeToAdd.push(newEdge)
         }
     })
 
@@ -740,7 +733,11 @@ async function updateGraph(timeToFullRender = 5000) {
     delay = Math.min(200, delay)
     const steps = Math.max(1, Math.round(delay / 40))
 
-    console.log('render starting')
+    if (timeToFullRender > 0 && delay == 0) {
+        delay = 1
+    }
+
+    console.log('render starting, delay: ' + delay + ", steps: " + steps)
 
     for (const id of nodeToDel) {
         // console.log('deleting node')
@@ -1041,6 +1038,17 @@ function drawCenterTree() {
         }
     }
 
+    const totalsLabel =
+        '<b>Обороты</b>\n\n' +
+        'Получил ' +
+        Math.round(totals.received).toString() +
+        '$\n' +
+        'Отдал ' +
+        Math.round(totals.gave).toString() +
+        '$'
+
+    nodes.update({ id: 'inner_exit', label: totalsLabel })
+
     function addCenterNodes() {
 
         const centerLabel = '<b>' + settings.userDrawnName + '</b>'
@@ -1061,7 +1069,7 @@ function drawCenterTree() {
             states.center.y = currentPosition.y
 
             nodes.add(newCenterNode)
-        } 
+        }
 
         addNode({ id: 'triangle', shape: 'triangleDown', imageSize: 65, x: states.center.x, y: states.center.y - 400, fixed: true, level: -2, mass: 15 })
         addNode({ id: 'inner_exit', label: 'Обороты', shape: 'box', x: states.center.x, y: states.center.y - 498, fixed: true, subType: 'outer', angle: 0, level: -2, mass: 15 })
@@ -2229,6 +2237,8 @@ export function addNode({ id, image = undefined, label = '', shape = 'circle', c
 
     let result = { id }
     if (nodes.get(id)) {
+        delete newNode.x
+        delete newNode.y
         nodes.update(newNode)
         result.isNew = false
     } else {
@@ -2876,6 +2886,13 @@ function handleNodeClick(nodeId, clickX, clickY) {
         onfilterTopToggle(10)
     } else if (nodeId === 'topAll') {
         onfilterTopToggle(0)
+    } else if (nodeId === 'addSecondAncestors'){
+        onaddSecondAncestorsToggle()
+    }
+
+    function onaddSecondAncestorsToggle(){
+        settings.addSecondAncestors = !settings.addSecondAncestors
+        updatePairs()
     }
 
 
