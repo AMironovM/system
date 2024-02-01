@@ -518,9 +518,9 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
         filterTopDeals(settings.filterByTop)
     }
 
-    // drawCenterTree()
+    drawCenterTree()
 
-    // drawExternalCloud()
+    drawExternalCloud()
 
     fillContractors()
 
