@@ -881,114 +881,115 @@ async function updateGraph(timeToFullRender = 5000) {
 
     statusText.innerText = ''
     statusElement.classList.add('hidden')
-}
 
-function updateCenterGraphCoordinates(nodeToAdd) {
+    function updateCenterGraphCoordinates(nodeToAdd) {
 
-    if (orderedBranches.length == 0) {
-        return
-    }
-
-    const minAgnle = 20
-    const maxAngle = 340
-
-    const currentPositions = network.getPositions()
-
-    orderedBranches.forEach(branch => {
-        const branchCoordinates = currentPositions['outer_' + branch.id]
-        if (branchCoordinates) {
-            branch.angle = getAngle(branchCoordinates.x, branchCoordinates.y, states.center).angle
-        } else {
-            branch.angle = undefined
+        if (orderedBranches.length == 0) {
+            return
         }
-    })
-
-    for (let arrayIndex = 0; arrayIndex < orderedBranches.length; arrayIndex++) {
-
-        let closestCW
-        let closestCCW
-
-        let itemsCW = 0
-        let itemsCCW = 0
-
-        for (let index = arrayIndex + 1; index < orderedBranches.length; index++) {
-            const branch = orderedBranches[index]
-
-            if (branch.angle !== undefined) {
-                closestCW = branch.angle
-                break
-            }
-
-            itemsCW++
-        }
-
-        for (let index = arrayIndex - 1; index >= 0; index--) {
-            const branch = orderedBranches[index]
-
-            if (branch.angle !== undefined) {
-                closestCCW = branch.angle
-                break
-            }
-            itemsCCW++
-        }
-
-        closestCW = closestCW ?? maxAngle
-        closestCCW = closestCCW ?? minAgnle
-
-        orderedBranches[arrayIndex].angle = closestCCW + (itemsCCW + 1) * ((closestCW - closestCCW) / (2 + itemsCW + itemsCCW))
-    }
-
-    let levelSiblings = []
-
-    for (const newNode of nodeToAdd) {
-        if ('branchId' in newNode) {
-            const branchAngle = orderedBranches.find(branch => {
-                return branch.id == newNode.branchId
-            }).angle
-
-            let levelSibling = levelSiblings.find(item => {
-                return (item.branchId == newNode.branchId && item.level == newNode.level)
-            })
-
-            if (!levelSibling) {
-                levelSiblings.push({ branchId: newNode.branchId, level: newNode.level, count: 0 })
-                levelSibling = _.last(levelSiblings)
+    
+        const minAgnle = 20
+        const maxAngle = 340
+    
+        const currentPositions = network.getPositions()
+    
+        orderedBranches.forEach(branch => {
+            const branchCoordinates = currentPositions['outer_' + branch.id]
+            if (branchCoordinates) {
+                branch.angle = getAngle(branchCoordinates.x, branchCoordinates.y, states.center).angle
             } else {
-                levelSibling.count++
+                branch.angle = undefined
             }
-
-            let angleCorrection = 0
-
-            if (levelSibling.count % 2 == 0) {
-                angleCorrection = levelSibling.count * 2
-            } else {
-                angleCorrection = (levelSibling.count + 1) * -2
+        })
+    
+        for (let arrayIndex = 0; arrayIndex < orderedBranches.length; arrayIndex++) {
+    
+            let closestCW
+            let closestCCW
+    
+            let itemsCW = 0
+            let itemsCCW = 0
+    
+            for (let index = arrayIndex + 1; index < orderedBranches.length; index++) {
+                const branch = orderedBranches[index]
+    
+                if (branch.angle !== undefined) {
+                    closestCW = branch.angle
+                    break
+                }
+    
+                itemsCW++
             }
-
-            const newCoordinates = getVectorCoordinates(branchAngle + angleCorrection, DISTANCE * newNode.level, states.center)
-
-            newNode.x = newCoordinates.x
-            newNode.y = newCoordinates.y
-            newNode.angle = newCoordinates.angle
-            newNode.apex = newCoordinates.apex
+    
+            for (let index = arrayIndex - 1; index >= 0; index--) {
+                const branch = orderedBranches[index]
+    
+                if (branch.angle !== undefined) {
+                    closestCCW = branch.angle
+                    break
+                }
+                itemsCCW++
+            }
+    
+            closestCW = closestCW ?? maxAngle
+            closestCCW = closestCCW ?? minAgnle
+    
+            orderedBranches[arrayIndex].angle = closestCCW + (itemsCCW + 1) * ((closestCW - closestCCW) / (2 + itemsCW + itemsCCW))
         }
-        else if (newNode.subType == 'group') {
-
-            const innerBranches = orderedBranches.filter(branch => {
-                return branch.parents.includes(newNode.groupId)
-            })
-
-            const branchAngles = innerBranches.map(a => a.angle)
-            let maxAngle = Math.max(...branchAngles)
-            let minAngle = Math.min(...branchAngles)
-            const newAngle = minAngle + (maxAngle - minAngle) / 2
-            const newCoordinates = getVectorCoordinates(newAngle, DISTANCE * newNode.level, states.center)
-
-            newNode.x = newCoordinates.x
-            newNode.y = newCoordinates.y
-
+    
+        let levelSiblings = []
+    
+        for (const newNode of nodeToAdd) {
+            if ('branchId' in newNode) {
+                const branchAngle = orderedBranches.find(branch => {
+                    return branch.id == newNode.branchId
+                }).angle
+    
+                let levelSibling = levelSiblings.find(item => {
+                    return (item.branchId == newNode.branchId && item.level == newNode.level)
+                })
+    
+                if (!levelSibling) {
+                    levelSiblings.push({ branchId: newNode.branchId, level: newNode.level, count: 0 })
+                    levelSibling = _.last(levelSiblings)
+                } else {
+                    levelSibling.count++
+                }
+    
+                let angleCorrection = 0
+    
+                if (levelSibling.count % 2 == 0) {
+                    angleCorrection = levelSibling.count * 2
+                } else {
+                    angleCorrection = (levelSibling.count + 1) * -2
+                }
+    
+                const newCoordinates = getVectorCoordinates(branchAngle + angleCorrection, DISTANCE * newNode.level, states.center)
+    
+                newNode.x = newCoordinates.x
+                newNode.y = newCoordinates.y
+                newNode.angle = newCoordinates.angle
+                newNode.apex = newCoordinates.apex
+            }
+            else if (newNode.subType == 'group') {
+    
+                const innerBranches = orderedBranches.filter(branch => {
+                    return branch.parents.includes(newNode.groupId)
+                })
+    
+                const branchAngles = innerBranches.map(a => a.angle)
+                let maxAngle = Math.max(...branchAngles)
+                let minAngle = Math.min(...branchAngles)
+                const newAngle = minAngle + (maxAngle - minAngle) / 2
+                const newCoordinates = getVectorCoordinates(newAngle, DISTANCE * newNode.level, states.center)
+    
+                newNode.x = newCoordinates.x
+                newNode.y = newCoordinates.y
+    
+            }
         }
     }
+    
 }
 
 
@@ -1131,8 +1132,384 @@ function drawCenterTree() {
         }
     }
 
+    function addCenterDeal(deal) {
+
+        if (deal.skip == true){
+            return
+        }
+    
+        let resourse
+        let branchId = 'deal_' + deal.id
 
 
+    
+        let mostInnerNodeId = states.centerNodeId
+        let level = 1
+        let groups = []
+    
+        let hidden = false
+    
+        if ('parent' in deal && 'parent' in deal.parent) {
+            groups.push(deal.parent.parent)
+            hidden = hiddenGroups.includes(deal.parent.parent.id)
+        }
+    
+        if ('parent' in deal && !hidden) {
+            groups.push(deal.parent)
+            hidden = hiddenGroups.includes(deal.parent.id)
+        }
+    
+        groups.forEach(group => {
+            let { id: newNodeId, isNew } = addGroupNode(group, mostInnerNodeId, { opacity: hidden ? 0.4 : 1, level, groupId: group.id, subType: 'group' })
+            mostInnerNodeId = newNodeId
+            level++
+        })
+    
+
+        const userIsContractor = deal.contractor?.id === settings.userDrawnId
+        const userIsEmployer = deal.employer.id === settings.userDrawnId
+    
+        if (userIsEmployer) {
+            resourse = deal.contractor
+        } else if (userIsContractor) {
+            resourse = deal.employer
+        }
+
+        let profitDeals
+
+        if (deal.object.type == 'Выгода') {
+            profitDeals = centerDeals.reduce((res, subDeal) => {
+                if ('deals' in subDeal) {
+                    return res
+                }
+                
+                const samePair = [subDeal.employer.id, subDeal.contractor?.id].includes(deal.employer.id) && [subDeal.employer.id, subDeal.contractor?.id].includes(deal.contractor.id) 
+                const relevantDeal = subDeal.object.type == 'Выгода' && samePair
+                if (relevantDeal) {
+                    subDeal.skip = true
+                    res.push(subDeal)
+                } 
+                return res
+            }, [])
+
+            branchId = 'profit_deals_' + resourse.id
+        }
+    
+        let isAncestoral = false
+    
+        if (resourse && deal.object.type === 'Человек' && (userIsEmployer || userIsContractor)) {
+            branchId = 'ancestoral_res_' + resourse.id
+            isAncestoral = true
+        }
+    
+        addToOrderedBranches(branchId, !hidden, groups.map(group => group.id))
+    
+        if (hidden) {
+            return
+        }
+    
+        let tempUseNicknames = settings.useNicknames
+
+        if (resourse?.id === settings.partnerId) {
+            settings.useNicknames = false
+        }
+
+        const edgeLabel = getEdgeLabels(profitDeals ? profitDeals : [deal])
+        const paymentDashes = !!(edgeLabel.paymentState == 'incomplete' || edgeLabel.paymentState == 'notStarted')
+        const executionDashes = !!(edgeLabel.executionState == 'incomplete' || edgeLabel.executionState == 'notStarted')
+    
+        if (userIsContractor) {
+            addResourse(true, true)
+            addObject()
+    
+            totals.received += edgeLabel.employerSum
+            totals.gave += edgeLabel.contractorSum
+        } else if (userIsEmployer) {
+            addObject()
+            addResourse(false, true)
+    
+            totals.gave += edgeLabel.employerSum
+            totals.received += edgeLabel.contractorSum
+        } else if (deal.object.id == settings.userDrawnId) {
+            resourse = deal.contractor
+            addResourse(false, false)
+            resourse = deal.employer
+            addResourse(true, false)
+            resourse = undefined
+        }
+    
+        addOuterNode()
+    
+        if (resourse) {
+            addUserThoughts(resourse, deal.id, branchId, level)
+        }
+    
+        settings.useNicknames = tempUseNicknames
+    
+        // if (user.id === settings.userDrawnId) {
+        //     addUserThoughts(pair, outerNodeId)
+        //     addPartnerThoughts(pair, innerNodeId)
+        // }
+    
+        function addOuterNode() {
+            const outerNodeId = 'outer_' + branchId
+    
+            const bigOuterNode = !!(deal.hasTension && (userIsEmployer || userIsContractor))
+    
+            const outerColor = bigOuterNode ? colors.mainRed : colors.mainGreen
+            let label = bigOuterNode ? settings.userDrawnName + ' дает' : ''
+            let size = bigOuterNode ? 100 : 1
+    
+            if (bigOuterNode && (userIsEmployer) && edgeLabel.employerSum > 200000) {
+                size = 200
+            }
+    
+            let shape = bigOuterNode ? 'circle' : 'dot'
+    
+            addNode({ id: outerNodeId, label, shape, color: outerColor, size, imageSize: 1, thoughtsExpanded: false, subType: 'outer', level, branchId })
+    
+            let dashes
+            label = ''
+            if (userIsEmployer || userIsContractor) {
+                dashes = userIsContractor ? executionDashes : paymentDashes
+                label = userIsContractor ? edgeLabel.contractorLabel : edgeLabel.employerLabel
+            }
+    
+            addEdge({ id1: outerNodeId, id2: mostInnerNodeId, dashes, label, direction: 'to' })
+    
+        }
+    
+    
+        function addObject() {
+    
+            if (!deal.hasObject) {
+                return
+            }
+    
+            const objectNodeId = 'object_deal_id_' + deal.id
+            const image = getAliasPresentation(deal.object, 'image', settings.useNicknames)
+            const label = '<b>' + getAliasPresentation(deal.object, 'name', settings.useNicknames) + '</b>'
+    
+            addNode({ id: objectNodeId, image, label, shape: image ? 'image' : 'box', size: 100, subType: 'object', level, branchId })
+            level++
+            addEdge({ id1: objectNodeId, id2: mostInnerNodeId, direction: 'to', label: deal.contractorGrateful ? '💚' : '' })
+            mostInnerNodeId = objectNodeId
+    
+    
+        }
+    
+        function addResourse(resourseIsEmployer, addThoughts) {
+    
+            if (!resourse) {
+                return
+            }
+    
+            const prefix = isAncestoral ? 'inner_res' : 'deal_' + deal.id + '_inner_res'
+    
+            let newNode = addResourseNode(resourse, prefix, false, { level, branchId })
+            level++
+    
+            let dashes = resourseIsEmployer ? paymentDashes : executionDashes
+            let label = resourseIsEmployer ? edgeLabel.employerLabel : edgeLabel.contractorLabel
+    
+            addEdge({ id1: mostInnerNodeId, id2: newNode.id, dashes, label, direction: 'from' })
+            mostInnerNodeId = newNode.id
+    
+            if (addThoughts) {
+                addPartnerThoughts(resourse, newNode.id, branchId, deal.id)
+            }
+    
+        }
+    
+    }
+    
+    function addDelegatedDeals(delegated) {
+    
+        const resourseIds = delegated.deals.reduce((res, el) => {
+            res.push(el.employer.id)
+            res.push(el.contractor.id)
+            return (res)
+        }, [])
+    
+        if (delegated.deals.length < 2) {
+            return
+        }
+    
+        if (!(resourseIds.includes(settings.userDrawnId))) {
+            return
+        }
+    
+        let lastDeal
+    
+        delegated.deals.forEach(deal => {
+            let nextDeal = delegated.deals.find(innerDeal => {
+                return (innerDeal.employer.id === deal.contractor.id)
+            })
+    
+            if (!nextDeal) {
+                lastDeal = deal
+            }
+        })
+    
+        if (!lastDeal) {
+            return
+        }
+    
+        let branchId = 'delegated_' + delegated.object.id
+    
+        let mostInnerNodeId = states.centerNodeId
+        let level = 1
+        let groups = []
+    
+        let hidden = false
+    
+        if ('parent' in delegated && 'parent' in delegated.parent) {
+            groups.push(delegated.parent.parent)
+            hidden = hiddenGroups.includes(delegated.parent.parent.id)
+        }
+    
+        if ('parent' in delegated && !hidden) {
+            groups.push(delegated.parent)
+            hidden = hiddenGroups.includes(delegated.parent.id)
+        }
+    
+        groups.forEach(group => {
+            let { id: newNodeId, isNew } = addGroupNode(group, mostInnerNodeId, { opacity: hidden ? 0.4 : 1, level, groupId: group.id, subType: 'group' })
+            mostInnerNodeId = newNodeId
+            level++
+        })
+    
+        addToOrderedBranches(branchId, !hidden, groups.map(group => group.id))
+    
+        if (hidden) {
+            return
+        }
+    
+        let tempUseNicknames = settings.useNicknames
+    
+        if (resourseIds.includes(settings.partnerId)) {
+            settings.useNicknames = false
+        }
+    
+        let contractorId = settings.userDrawnId
+    
+        let deal
+        let edgeLabel
+        let paymentDashes
+        let executionDashes
+    
+        let userIsEmployer = true
+        let userIsContractor = false
+    
+        while (true) {
+            deal = delegated.deals.find(deal => {
+                return (deal.contractor.id === contractorId)
+            })
+    
+            let addContractor = false
+    
+            if (!deal) {
+                addObject(delegated.object)
+                deal = lastDeal
+    
+                if (deal.contractor.id === settings.userDrawnId) {
+                    break
+                    userIsContractor = true
+                    userIsEmployer = false
+                }
+    
+                addContractor = true
+            }
+    
+            edgeLabel = getEdgeLabels([deal])
+            paymentDashes = !!(edgeLabel.paymentState == 'incomplete' || edgeLabel.paymentState == 'notStarted')
+            executionDashes = !!(edgeLabel.executionState == 'incomplete' || edgeLabel.executionState == 'notStarted')
+    
+            if (addContractor) {
+                addResourse(deal.contractor, false, true)
+            }
+    
+            if (deal.employer.id === settings.userDrawnId) {
+                break
+            }
+    
+            addResourse(deal.employer, true, true)
+            contractorId = deal.employer.id
+        }
+    
+    
+        addOuterNode()
+    
+        settings.useNicknames = tempUseNicknames
+    
+        function addOuterNode() {
+            const outerNodeId = 'outer_' + branchId
+    
+            const bigOuterNode = !!(deal.hasTension && (userIsEmployer || userIsContractor))
+    
+            const outerColor = bigOuterNode ? colors.mainRed : colors.mainGreen
+            let label = bigOuterNode ? settings.userDrawnName + ' дает' : ''
+            let size = bigOuterNode ? 100 : 1
+    
+            if (bigOuterNode && (userIsEmployer) && edgeLabel.employerSum > 200000) {
+                size = 200
+            }
+    
+            let shape = bigOuterNode ? 'circle' : 'dot'
+    
+            addNode({ id: outerNodeId, label, shape, color: outerColor, size, imageSize: 1, thoughtsExpanded: false, subType: 'outer', level, branchId })
+    
+            let dashes
+            label = ''
+            if (true) {
+                dashes = userIsContractor ? executionDashes : paymentDashes
+                label = userIsContractor ? edgeLabel.contractorLabel : edgeLabel.employerLabel
+            }
+    
+            addEdge({ id1: outerNodeId, id2: mostInnerNodeId, dashes, label, direction: 'to' })
+    
+        }
+    
+    
+        function addObject(object) {
+    
+            const objectNodeId = 'object_id_' + object.id
+            const image = getAliasPresentation(object, 'image', settings.useNicknames)
+            const label = '<b>' + getAliasPresentation(object, 'name', settings.useNicknames) + '</b>'
+    
+            addNode({ id: objectNodeId, image, label, shape: image ? 'image' : 'box', size: 100, subType: 'object', level, branchId })
+            level++
+            addEdge({ id1: objectNodeId, id2: mostInnerNodeId, direction: 'to' })
+            mostInnerNodeId = objectNodeId
+    
+    
+        }
+    
+        function addResourse(resourse, resourseIsEmployer, addThoughts) {
+    
+            if (!resourse) {
+                return
+            }
+    
+            const prefix = 'deal_' + deal.id + '_inner_res_' + resourse.id
+    
+            let newNode = addResourseNode(resourse, prefix, false, { level, branchId })
+            level++
+    
+            let dashes = resourseIsEmployer ? paymentDashes : executionDashes
+            let label = resourseIsEmployer ? edgeLabel.employerLabel : edgeLabel.contractorLabel
+    
+            addEdge({ id1: mostInnerNodeId, id2: newNode.id, dashes, label, direction: 'from' })
+            mostInnerNodeId = newNode.id
+    
+            if (addThoughts) {
+                addPartnerThoughts(resourse, newNode.id, branchId, deal.id, true)
+            }
+    
+        }
+    
+    }
+    
 }
 
 function deleteSubGroupsWithOneDeal() {
@@ -1424,356 +1801,6 @@ function sortCenterDeals() {
     })
 }
 
-function addCenterDeal(deal) {
-
-    let resourse
-    let branchId = 'deal_' + deal.id
-
-    let mostInnerNodeId = states.centerNodeId
-    let level = 1
-    let groups = []
-
-    let hidden = false
-
-    if ('parent' in deal && 'parent' in deal.parent) {
-        groups.push(deal.parent.parent)
-        hidden = hiddenGroups.includes(deal.parent.parent.id)
-    }
-
-    if ('parent' in deal && !hidden) {
-        groups.push(deal.parent)
-        hidden = hiddenGroups.includes(deal.parent.id)
-    }
-
-    groups.forEach(group => {
-        let { id: newNodeId, isNew } = addGroupNode(group, mostInnerNodeId, { opacity: hidden ? 0.4 : 1, level, groupId: group.id, subType: 'group' })
-        mostInnerNodeId = newNodeId
-        level++
-    })
-
-    const edgeLabel = getEdgeLabels([deal])
-    const userIsContractor = deal.contractor?.id === settings.userDrawnId
-    const userIsEmployer = deal.employer.id === settings.userDrawnId
-
-    if (userIsEmployer) {
-        resourse = deal.contractor
-    } else if (userIsContractor) {
-        resourse = deal.employer
-    }
-
-    let isAncestoral = false
-
-    if (resourse && deal.object.type === 'Человек' && (userIsEmployer || userIsContractor)) {
-        branchId = 'ancestoral_res_' + resourse.id
-        isAncestoral = true
-    }
-
-    addToOrderedBranches(branchId, !hidden, groups.map(group => group.id))
-
-    if (hidden) {
-        return
-    }
-
-    let tempUseNicknames = settings.useNicknames
-
-    if (resourse?.id === settings.partnerId) {
-        settings.useNicknames = false
-    }
-
-    const paymentDashes = !!(edgeLabel.paymentState == 'incomplete' || edgeLabel.paymentState == 'notStarted')
-    const executionDashes = !!(edgeLabel.executionState == 'incomplete' || edgeLabel.executionState == 'notStarted')
-
-    if (userIsContractor) {
-        addResourse(true, true)
-        addObject()
-
-        totals.received += edgeLabel.employerSum
-        totals.gave += edgeLabel.contractorSum
-    } else if (userIsEmployer) {
-        addObject()
-        addResourse(false, true)
-
-        totals.gave += edgeLabel.employerSum
-        totals.received += edgeLabel.contractorSum
-    } else if (deal.object.id == settings.userDrawnId) {
-        resourse = deal.contractor
-        addResourse(false, false)
-        resourse = deal.employer
-        addResourse(true, false)
-        resourse = undefined
-    }
-
-    addOuterNode()
-
-    if (resourse) {
-        addUserThoughts(resourse, deal.id, branchId, level)
-    }
-
-    settings.useNicknames = tempUseNicknames
-
-    // if (user.id === settings.userDrawnId) {
-    //     addUserThoughts(pair, outerNodeId)
-    //     addPartnerThoughts(pair, innerNodeId)
-    // }
-
-    function addOuterNode() {
-        const outerNodeId = 'outer_' + branchId
-
-        const bigOuterNode = !!(deal.hasTension && (userIsEmployer || userIsContractor))
-
-        const outerColor = bigOuterNode ? colors.mainRed : colors.mainGreen
-        let label = bigOuterNode ? settings.userDrawnName + ' дает' : ''
-        let size = bigOuterNode ? 100 : 1
-
-        if (bigOuterNode && (userIsEmployer) && edgeLabel.employerSum > 200000) {
-            size = 200
-        }
-
-        let shape = bigOuterNode ? 'circle' : 'dot'
-
-        addNode({ id: outerNodeId, label, shape, color: outerColor, size, imageSize: 1, thoughtsExpanded: false, subType: 'outer', level, branchId })
-
-        let dashes
-        label = ''
-        if (userIsEmployer || userIsContractor) {
-            dashes = userIsContractor ? executionDashes : paymentDashes
-            label = userIsContractor ? edgeLabel.contractorLabel : edgeLabel.employerLabel
-        }
-
-        addEdge({ id1: outerNodeId, id2: mostInnerNodeId, dashes, label, direction: 'to' })
-
-    }
-
-
-    function addObject() {
-
-        if (!deal.hasObject) {
-            return
-        }
-
-        const objectNodeId = 'object_deal_id_' + deal.id
-        const image = getAliasPresentation(deal.object, 'image', settings.useNicknames)
-        const label = '<b>' + getAliasPresentation(deal.object, 'name', settings.useNicknames) + '</b>'
-
-        addNode({ id: objectNodeId, image, label, shape: image ? 'image' : 'box', size: 100, subType: 'object', level, branchId })
-        level++
-        addEdge({ id1: objectNodeId, id2: mostInnerNodeId, direction: 'to', label: deal.contractorGrateful ? '💚' : '' })
-        mostInnerNodeId = objectNodeId
-
-
-    }
-
-    function addResourse(resourseIsEmployer, addThoughts) {
-
-        if (!resourse) {
-            return
-        }
-
-        const prefix = isAncestoral ? 'inner_res' : 'deal_' + deal.id + '_inner_res'
-
-        let newNode = addResourseNode(resourse, prefix, false, { level, branchId })
-        level++
-
-        let dashes = resourseIsEmployer ? paymentDashes : executionDashes
-        let label = resourseIsEmployer ? edgeLabel.employerLabel : edgeLabel.contractorLabel
-
-        addEdge({ id1: mostInnerNodeId, id2: newNode.id, dashes, label, direction: 'from' })
-        mostInnerNodeId = newNode.id
-
-        if (addThoughts) {
-            addPartnerThoughts(resourse, newNode.id, branchId, deal.id)
-        }
-
-    }
-
-}
-
-function addDelegatedDeals(delegated) {
-
-    const resourseIds = delegated.deals.reduce((res, el) => {
-        res.push(el.employer.id)
-        res.push(el.contractor.id)
-        return (res)
-    }, [])
-
-    if (delegated.deals.length < 2) {
-        return
-    }
-
-    if (!(resourseIds.includes(settings.userDrawnId))) {
-        return
-    }
-
-    let lastDeal
-
-    delegated.deals.forEach(deal => {
-        let nextDeal = delegated.deals.find(innerDeal => {
-            return (innerDeal.employer.id === deal.contractor.id)
-        })
-
-        if (!nextDeal) {
-            lastDeal = deal
-        }
-    })
-
-    if (!lastDeal) {
-        return
-    }
-
-    let branchId = 'delegated_' + delegated.object.id
-
-    let mostInnerNodeId = states.centerNodeId
-    let level = 1
-    let groups = []
-
-    let hidden = false
-
-    if ('parent' in delegated && 'parent' in delegated.parent) {
-        groups.push(delegated.parent.parent)
-        hidden = hiddenGroups.includes(delegated.parent.parent.id)
-    }
-
-    if ('parent' in delegated && !hidden) {
-        groups.push(delegated.parent)
-        hidden = hiddenGroups.includes(delegated.parent.id)
-    }
-
-    groups.forEach(group => {
-        let { id: newNodeId, isNew } = addGroupNode(group, mostInnerNodeId, { opacity: hidden ? 0.4 : 1, level, groupId: group.id, subType: 'group' })
-        mostInnerNodeId = newNodeId
-        level++
-    })
-
-    addToOrderedBranches(branchId, !hidden, groups.map(group => group.id))
-
-    if (hidden) {
-        return
-    }
-
-    let tempUseNicknames = settings.useNicknames
-
-    if (resourseIds.includes(settings.partnerId)) {
-        settings.useNicknames = false
-    }
-
-    let contractorId = settings.userDrawnId
-
-    let deal
-    let edgeLabel
-    let paymentDashes
-    let executionDashes
-
-    let userIsEmployer = true
-    let userIsContractor = false
-
-    while (true) {
-        deal = delegated.deals.find(deal => {
-            return (deal.contractor.id === contractorId)
-        })
-
-        let addContractor = false
-
-        if (!deal) {
-            addObject(delegated.object)
-            deal = lastDeal
-
-            if (deal.contractor.id === settings.userDrawnId) {
-                break
-                userIsContractor = true
-                userIsEmployer = false
-            }
-
-            addContractor = true
-        }
-
-        edgeLabel = getEdgeLabels([deal])
-        paymentDashes = !!(edgeLabel.paymentState == 'incomplete' || edgeLabel.paymentState == 'notStarted')
-        executionDashes = !!(edgeLabel.executionState == 'incomplete' || edgeLabel.executionState == 'notStarted')
-
-        if (addContractor) {
-            addResourse(deal.contractor, false, true)
-        }
-
-        if (deal.employer.id === settings.userDrawnId) {
-            break
-        }
-
-        addResourse(deal.employer, true, true)
-        contractorId = deal.employer.id
-    }
-
-
-    addOuterNode()
-
-    settings.useNicknames = tempUseNicknames
-
-    function addOuterNode() {
-        const outerNodeId = 'outer_' + branchId
-
-        const bigOuterNode = !!(deal.hasTension && (userIsEmployer || userIsContractor))
-
-        const outerColor = bigOuterNode ? colors.mainRed : colors.mainGreen
-        let label = bigOuterNode ? settings.userDrawnName + ' дает' : ''
-        let size = bigOuterNode ? 100 : 1
-
-        if (bigOuterNode && (userIsEmployer) && edgeLabel.employerSum > 200000) {
-            size = 200
-        }
-
-        let shape = bigOuterNode ? 'circle' : 'dot'
-
-        addNode({ id: outerNodeId, label, shape, color: outerColor, size, imageSize: 1, thoughtsExpanded: false, subType: 'outer', level, branchId })
-
-        let dashes
-        label = ''
-        if (true) {
-            dashes = userIsContractor ? executionDashes : paymentDashes
-            label = userIsContractor ? edgeLabel.contractorLabel : edgeLabel.employerLabel
-        }
-
-        addEdge({ id1: outerNodeId, id2: mostInnerNodeId, dashes, label, direction: 'to' })
-
-    }
-
-
-    function addObject(object) {
-
-        const objectNodeId = 'object_id_' + object.id
-        const image = getAliasPresentation(object, 'image', settings.useNicknames)
-        const label = '<b>' + getAliasPresentation(object, 'name', settings.useNicknames) + '</b>'
-
-        addNode({ id: objectNodeId, image, label, shape: image ? 'image' : 'box', size: 100, subType: 'object', level, branchId })
-        level++
-        addEdge({ id1: objectNodeId, id2: mostInnerNodeId, direction: 'to' })
-        mostInnerNodeId = objectNodeId
-
-
-    }
-
-    function addResourse(resourse, resourseIsEmployer, addThoughts) {
-
-        if (!resourse) {
-            return
-        }
-
-        const prefix = 'deal_' + deal.id + '_inner_res_' + resourse.id
-
-        let newNode = addResourseNode(resourse, prefix, false, { level, branchId })
-        level++
-
-        let dashes = resourseIsEmployer ? paymentDashes : executionDashes
-        let label = resourseIsEmployer ? edgeLabel.employerLabel : edgeLabel.contractorLabel
-
-        addEdge({ id1: mostInnerNodeId, id2: newNode.id, dashes, label, direction: 'from' })
-        mostInnerNodeId = newNode.id
-
-        if (addThoughts) {
-            addPartnerThoughts(resourse, newNode.id, branchId, deal.id, true)
-        }
-
-    }
-
-}
 
 function addGroupNode(group, mostInnerNodeId, { ...additionalParams } = {}) {
 
