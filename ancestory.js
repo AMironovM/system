@@ -8,11 +8,15 @@ const TREE_BRANCH_DISTANCE = 300
 const TREE_CHILD_BRANCH_DISTANCE = 500
 const X_OFFSET = 5000
 
+const resourses = []
+
 let ancestoryDeals
 
 export function drawTree(ancestory) {
 
     ancestoryDeals = ancestory
+
+    resourses.length = 0
 
     // if (!ancestory.parents && !ancestory.partners) {
     //     return
@@ -22,10 +26,10 @@ export function drawTree(ancestory) {
     const centerNodeId = "tree_resourse_" + settings.userDrawnId
     const centerCoordinates = { x: states.center.x - X_OFFSET, y: states.center.y }
 
-    let centerNode = { id: centerNodeId, label: centerLabel, coordinates: centerCoordinates, minAngle: -90, maxAngle: 90  }
+    let centerNode = { id: centerNodeId, label: centerLabel, coordinates: centerCoordinates, minAngle: -90, maxAngle: 90 }
 
     if (settings.userImage) {
-        centerNode = { ...centerNode, shape: 'circularImage', image: settings.userImage, imageSize: SIZES.NODE_IMAGE}
+        centerNode = { ...centerNode, shape: 'circularImage', image: settings.userImage, imageSize: SIZES.NODE_IMAGE }
     }
 
     addNode(centerNode)
@@ -67,8 +71,10 @@ function drawParents(parentDeal, childNodeId, centerCoordinates) {
     newNode = addResourseNode(parentDeal.employer, 'tree_resourse_', false, { minAngle: childNode.minAngle, maxAngle: childNode.minAngle + halfAngle, x: parent1coordinates.x, y: parent1coordinates.y, subtype: 'treeParent' })
 
     if (newNode.isNew) {
-        newNodes.push({id:parentDeal.employer.id, center: parent1coordinates})
+        newNodes.push({ id: parentDeal.employer.id, center: parent1coordinates })
         // drawParentsAndChildren(parentDeal.employer.id, parent1coordinates)
+        const partnerRes = getResourse(parentDeal.employer.id)
+        partnerRes.busySlots.push(90)
     }
 
     // if (parents.resourse1.parents) {
@@ -84,8 +90,10 @@ function drawParents(parentDeal, childNodeId, centerCoordinates) {
     newNode = addResourseNode(parentDeal.contractor, 'tree_resourse_', false, { maxAngle: childNode.maxAngle, minAngle: childNode.minAngle + halfAngle, x: parent2coordinates.x, y: parent2coordinates.y, subtype: 'treeParent' })
 
     if (newNode.isNew) {
-        newNodes.push({id:parentDeal.contractor.id, center: parent2coordinates})
+        newNodes.push({ id: parentDeal.contractor.id, center: parent2coordinates })
         // drawParentsAndChildren(parentDeal.contractor.id, parent2coordinates)
+        const partnerRes = getResourse(parentDeal.contractor.id)
+        partnerRes.busySlots.push(270)
     }
 
     const orderedParents = [parentDeal.contractor.id, parentDeal.employer.id].sort()
@@ -103,7 +111,7 @@ function drawParents(parentDeal, childNodeId, centerCoordinates) {
     addEdge({ id1: parent1nodeId, id2: parent2nodeId, label: '', direction: 'to' })
 
     newNodes.forEach(newNode => {
-        drawParentsAndChildren(newNode.id, newNode.center)    
+        drawParentsAndChildren(newNode.id, newNode.center)
     })
 
     // if (parents.resourse2.parents) {
@@ -118,34 +126,58 @@ function drawChildren(partners, parentId, parentCoordinates) {
         return
     }
 
-    const angleOffset = 180 / (partners.length + ((partners.length % 2 === 0) ? 0 : 1))
+    const parentNodeId = 'tree_resourse_' + parentId
+    const parentNode = nodes.get(parentNodeId)
+
+    let angles = [90, 270, 135, 225, 180]
+
+    const parentResourse = getResourse(parentId)
+
+    angles = angles.filter(el => {
+        return (!(parentResourse.busySlots.includes(el)))
+    })
+
+    // const angleOffset = 180 / (partners.length + ((partners.length % 2 === 0) ? 0 : 1))
     let partnerCount = 0
+    let newNodes = []
 
     partners.forEach(partner => {
 
-        const isEven = (partnerCount % 2 === 0)
-        const branchCount = Math.floor(partnerCount / 2)
+        // const isEven = (partnerCount % 2 === 0)
+        // const branchCount = Math.floor(partnerCount / 2)
 
-        let partnerAngle = 0
-        if (isEven) {
-            partnerAngle = 90 + angleOffset * branchCount
-        } else {
-            partnerAngle = 270 - (angleOffset * branchCount)
-        }
+        // let partnerAngle = 0
+        // if (isEven) {
+        //     partnerAngle = 90 + angleOffset * branchCount
+        // } else {
+        //     partnerAngle = 270 - (angleOffset * branchCount)
+        // }
 
+
+
+
+        const partnerAngle = angles[partnerCount % angles.length]
         let newNode
 
         const partnerCoordinates = getVectorCoordinates(partnerAngle, TREE_CHILD_BRANCH_DISTANCE, parentCoordinates)
         const partnerNodeId = 'tree_resourse_' + partner.id
         // const ignoreNicknamesForPartner = (partner.id === settings.partnerId || partner.children.map(el => el.id).includes(settings.partnerId))
 
-        newNode = addResourseNode(partner, 'tree_resourse_', false, { x: partnerCoordinates.x, y: partnerCoordinates.y, subtype: 'treePartner', minAngle: -90, maxAngle: 90  })
+        newNode = addResourseNode(partner, 'tree_resourse_', false, { x: partnerCoordinates.x, y: partnerCoordinates.y, subtype: 'treePartner', minAngle: -90, maxAngle: 90 })
+
+
 
         if (newNode.isNew) {
-            drawParentsAndChildren(partner.id, partnerCoordinates)
+            partnerCount++
+            const partnerRes = getResourse(partner.id)
+            partnerRes.busySlots.push(partnerAngle + (partnerAngle > 180 ? -180 : 180))
+            parentResourse.busySlots.push(partnerAngle)
+
+            newNodes.push({ id: partner.id, center: partnerCoordinates })
+
         }
 
-        const childMainNodeCoordinates = getVectorCoordinates(partnerAngle + 15 * (isEven ? 1 : -1), TREE_CHILD_BRANCH_DISTANCE / 2, parentCoordinates)
+        const childMainNodeCoordinates = getVectorCoordinates(partnerAngle, TREE_CHILD_BRANCH_DISTANCE / 2, parentCoordinates)
 
         const orderedParents = [partner.id, parentId].sort()
 
@@ -184,9 +216,10 @@ function drawChildren(partners, parentId, parentCoordinates) {
             // }
 
             // const ignoreNicknamesForChild = (ignoreNicknames || partner.id === settings.partnerId || child.id === settings.partnerId || childChildrenIds.includes(settings.partnerId))
-            let newNode = addResourseNode(child.object, 'tree_resourse_', false, { x: childCoordinates.x, y: childCoordinates.y, subtype: 'childTreePartner', minAngle: -90, maxAngle: 90  })
+            let newNode = addResourseNode(child.object, 'tree_resourse_', false, { x: childCoordinates.x, y: childCoordinates.y, subtype: 'childTreePartner', minAngle: -90, maxAngle: 90 })
             if (newNode.isNew) {
-                drawParentsAndChildren(child.object.id, childCoordinates)
+                // drawParentsAndChildren(child.object.id, childCoordinates)
+                newNodes.push({id: child.object.id, center: childCoordinates}) 
             }
             childCount++
 
@@ -228,7 +261,7 @@ function drawChildren(partners, parentId, parentCoordinates) {
             labelTo = labelTo.slice(0, -2)
         }
 
-        const parentNodeId = 'tree_resourse_' + parentId
+
 
         if (labelTo) {
             addEdge({ id1: parentNodeId, id2: partnerNodeId, direction: 'to', label: labelTo, length: TREE_CHILD_BRANCH_DISTANCE })
@@ -249,11 +282,10 @@ function drawChildren(partners, parentId, parentCoordinates) {
             addEdge({ id1: childMainNodeId, id2: partnerNodeId, direction: "to", length: TREE_CHILD_BRANCH_DISTANCE / 60 })
         }
 
+    })
 
-
-
-        partnerCount++
-
+    newNodes.forEach(newNode => {
+        drawParentsAndChildren(newNode.id, newNode.center)
     })
 
 }
@@ -304,6 +336,19 @@ function drawParentsAndChildren(resourseId, centerCoordinates) {
     //     drawParentsAndChildren(node.id, node.centerCoordinates)    
     // })
 
+}
 
+function getResourse(id) {
+    let resourse = resourses.find(el => {
+        return (el.id == id)
+    }
+    )
+
+    if (!resourse) {
+        resourse = { id, busySlots: [] }
+        resourses.push(resourse)
+    }
+
+    return resourse
 
 }
