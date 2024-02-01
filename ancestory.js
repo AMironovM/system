@@ -12,11 +12,14 @@ const resourses = []
 
 let ancestoryDeals
 
+const childNodes = []
+
 export function drawTree(ancestory) {
 
     ancestoryDeals = ancestory
 
     resourses.length = 0
+    childNodes.length = 0
 
     // if (!ancestory.parents && !ancestory.partners) {
     //     return
@@ -45,6 +48,54 @@ export function drawTree(ancestory) {
     }
 
     drawParentsAndChildren(settings.userDrawnId, centerCoordinates)
+
+    while (true) {
+        if (childNodes.length == 0) {
+            break
+        }
+        let childNodesToRender = structuredClone(childNodes)
+        childNodes.length = 0
+
+        let newNodes = []
+
+        childNodesToRender.sort((a, b) => { 
+            return (a.children.length - b.children.length)
+        })
+
+        childNodesToRender.forEach(childNode => {
+
+            let childCount = 0
+
+            childNode.children.forEach(child => {
+
+                let angleCorrection = 0
+
+                if (childCount % 2 == 0) {
+                    angleCorrection = childCount * 10
+                } else {
+                    angleCorrection = (childCount + 1) * -10
+                }
+
+                const childCoordinates = getVectorCoordinates(180 + angleCorrection, TREE_CHILD_BRANCH_DISTANCE / 2, childNode.center)
+
+                // const ignoreNicknamesForChild = (ignoreNicknames || partner.id === settings.partnerId || child.id === settings.partnerId || childChildrenIds.includes(settings.partnerId))
+                let newNode = addResourseNode(child.object, 'tree_resourse_', false, { x: childCoordinates.x, y: childCoordinates.y, subtype: 'childTreePartner', minAngle: -90, maxAngle: 90 })
+                if (newNode.isNew) {
+                    // drawParentsAndChildren(child.object.id, childCoordinates)
+                    newNodes.push({ id: child.object.id, center: childCoordinates })
+                    childCount++
+                }
+
+                addEdge({ id1: childNode.id, id2: 'tree_resourse_' + child.object.id, length: TREE_CHILD_BRANCH_DISTANCE / 3, direction: 'to' })
+
+            })
+
+        })
+
+        newNodes.forEach(newNode => {
+            drawParentsAndChildren(newNode.id, newNode.center)
+        })
+    }
 
     // drawParents(ancestory.parents, "tree_center", 1, -90, 90, ancestory.self.id === settings.partnerId)
     // drawChildren(ancestory.partners, "tree_center", { x: states.center.x - X_OFFSET, y: states.center.y }, ancestory.self.id === settings.partnerId)
@@ -143,19 +194,6 @@ function drawChildren(partners, parentId, parentCoordinates) {
 
     partners.forEach(partner => {
 
-        // const isEven = (partnerCount % 2 === 0)
-        // const branchCount = Math.floor(partnerCount / 2)
-
-        // let partnerAngle = 0
-        // if (isEven) {
-        //     partnerAngle = 90 + angleOffset * branchCount
-        // } else {
-        //     partnerAngle = 270 - (angleOffset * branchCount)
-        // }
-
-
-
-
         const partnerAngle = angles[partnerCount % angles.length]
         let newNode
 
@@ -164,8 +202,6 @@ function drawChildren(partners, parentId, parentCoordinates) {
         // const ignoreNicknamesForPartner = (partner.id === settings.partnerId || partner.children.map(el => el.id).includes(settings.partnerId))
 
         newNode = addResourseNode(partner, 'tree_resourse_', false, { x: partnerCoordinates.x, y: partnerCoordinates.y, subtype: 'treePartner', minAngle: -90, maxAngle: 90 })
-
-
 
         if (newNode.isNew) {
             partnerCount++
@@ -191,40 +227,15 @@ function drawChildren(partners, parentId, parentCoordinates) {
         let labelTo = ''
         let labelFrom = ''
 
+        let existingChildNode = childNodes.find(el => {
+            return el.id == childMainNodeId
+        })
+
+        if (!existingChildNode) {
+            childNodes.push({ id: childMainNodeId, center: childMainNodeCoordinates, children: partner.children })
+        }
+
         partner.children.forEach(child => {
-
-            let angleCorrection = 0
-
-            if (childCount % 2 == 0) {
-                angleCorrection = childCount * 10
-            } else {
-                angleCorrection = (childCount + 1) * -10
-            }
-
-            const mainAngle = 180
-            const childCoordinates = getVectorCoordinates(mainAngle + angleCorrection, TREE_CHILD_BRANCH_DISTANCE / 2, childMainNodeCoordinates)
-
-            // let childChildrenIds = []
-
-            // if ('partners' in child) {
-            //     childChildrenIds = child.partners.reduce((res, partner) => {
-            //         let partnerChildrenIds = partner.children.map(el => el.id)
-            //         res = [...res, ...partnerChildrenIds]
-            //         return(res)
-            //     }, [])
-
-            // }
-
-            // const ignoreNicknamesForChild = (ignoreNicknames || partner.id === settings.partnerId || child.id === settings.partnerId || childChildrenIds.includes(settings.partnerId))
-            let newNode = addResourseNode(child.object, 'tree_resourse_', false, { x: childCoordinates.x, y: childCoordinates.y, subtype: 'childTreePartner', minAngle: -90, maxAngle: 90 })
-            if (newNode.isNew) {
-                // drawParentsAndChildren(child.object.id, childCoordinates)
-                newNodes.push({id: child.object.id, center: childCoordinates}) 
-            }
-            childCount++
-
-            addEdge({ id1: childMainNodeId, id2: 'tree_resourse_' + child.object.id, length: TREE_CHILD_BRANCH_DISTANCE / 3, direction: 'to' })
-
             if (!(child.currency.id in currencies)) {
                 currencies[child.currency.id] = { symbol: child.currency.symbol, gave: 0, received: 0 }
             }
@@ -234,14 +245,7 @@ function drawChildren(partners, parentId, parentCoordinates) {
             } else {
                 currencies[child.currency.id].gave += child.currency.value
             }
-
-            // if ('partners' in child) {
-            //     drawChildren(child.partners, 'childTreePartner_' + child.id, childCoordinates, child.id === settings.partnerId)
-            // }
-
         })
-
-
 
         for (let [id, currency] of Object.entries(currencies)) {
             if (currency.received > 0) {
