@@ -142,7 +142,7 @@ focusToggle.addEventListener('change', onFocusToggle)
 
 let authKey = readCookie('authKey')
 
-let nodes = new vis.DataSet([])
+export let nodes = new vis.DataSet([])
 export let edges = new vis.DataSet([])
 
 let currentNodes = new vis.DataSet([])
@@ -518,9 +518,9 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
         filterTopDeals(settings.filterByTop)
     }
 
-    drawCenterTree()
+    // drawCenterTree()
 
-    drawExternalCloud()
+    // drawExternalCloud()
 
     fillContractors()
 
@@ -888,7 +888,7 @@ async function updateGraph(timeToFullRender = 5000) {
             return
         }
     
-        const minAgnle = 20
+        const minAngle = 20
         const maxAngle = 340
     
         const currentPositions = network.getPositions()
@@ -932,7 +932,7 @@ async function updateGraph(timeToFullRender = 5000) {
             }
     
             closestCW = closestCW ?? maxAngle
-            closestCCW = closestCCW ?? minAgnle
+            closestCCW = closestCCW ?? minAngle
     
             orderedBranches[arrayIndex].angle = closestCCW + (itemsCCW + 1) * ((closestCW - closestCCW) / (2 + itemsCW + itemsCCW))
         }
@@ -2281,6 +2281,8 @@ export function addNode({ id, image = undefined, label = '', shape = 'circle', c
     if (nodes.get(id)) {
         delete newNode.x
         delete newNode.y
+        delete newNode.minAngle
+        delete newNode.maxAngle
         nodes.update(newNode)
         result.isNew = false
     } else {
