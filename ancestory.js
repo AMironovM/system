@@ -4,8 +4,8 @@ import {
     getVectorCoordinates
 } from './misc.js'
 
-const TREE_BRANCH_DISTANCE = 300
-const TREE_CHILD_BRANCH_DISTANCE = 500
+const TREE_BRANCH_DISTANCE = 400
+const TREE_CHILD_BRANCH_DISTANCE = 600
 const X_OFFSET = 5000
 
 const resourses = []
@@ -50,15 +50,20 @@ export function drawTree(ancestory) {
     drawParentsAndChildren(settings.userDrawnId, centerCoordinates)
 
     while (true) {
-        if (childNodes.length == 0) {
+        if (childNodes.every(el => {
+            return (el.children.length == 0)
+        })) {
             break
         }
         let childNodesToRender = structuredClone(childNodes)
-        childNodes.length = 0
+
+        childNodes.forEach(childNode => {
+            childNode.children.length = 0
+        })
 
         let newNodes = []
 
-        childNodesToRender.sort((a, b) => { 
+        childNodesToRender.sort((a, b) => {
             return (a.children.length - b.children.length)
         })
 
@@ -76,7 +81,7 @@ export function drawTree(ancestory) {
                     angleCorrection = (childCount + 1) * -10
                 }
 
-                const childCoordinates = getVectorCoordinates(180 + angleCorrection, TREE_CHILD_BRANCH_DISTANCE / 2, childNode.center)
+                const childCoordinates = getVectorCoordinates(180 + angleCorrection, TREE_CHILD_BRANCH_DISTANCE / (child.secondAncestor ? 4 : 2), childNode.center)
 
                 // const ignoreNicknamesForChild = (ignoreNicknames || partner.id === settings.partnerId || child.id === settings.partnerId || childChildrenIds.includes(settings.partnerId))
                 let newNode = addResourseNode(child.object, 'tree_resourse_', false, { x: childCoordinates.x, y: childCoordinates.y, subtype: 'childTreePartner', minAngle: -90, maxAngle: 90 })
@@ -115,7 +120,7 @@ function drawParents(parentDeal, childNodeId, centerCoordinates) {
 
     const halfAngle = (childNode.maxAngle - childNode.minAngle) / 2
     const parent1angle = childNode.minAngle + halfAngle / 3
-    const parent1coordinates = getVectorCoordinates(parent1angle, TREE_BRANCH_DISTANCE, centerCoordinates)
+    const parent1coordinates = getVectorCoordinates(parent1angle, TREE_BRANCH_DISTANCE / (parentDeal.secondAncestor ? 2 : 1), centerCoordinates)
     const parent1nodeId = "tree_resourse_" + parentDeal.employer.id
 
     // const ignoreNicknamesForParent1 = (ignoreNicknames || parentDeal.employer.id === settings.partnerId || [parents.resourse1.parents?.resourse1?.id, parents.resourse1.parents?.resourse2?.id].includes(settings.partnerId))
@@ -133,7 +138,7 @@ function drawParents(parentDeal, childNodeId, centerCoordinates) {
     // }
 
     const parent2angle = childNode.minAngle + (halfAngle * 1.66)
-    const parent2coordinates = getVectorCoordinates(parent2angle, TREE_BRANCH_DISTANCE, centerCoordinates)
+    const parent2coordinates = getVectorCoordinates(parent2angle, TREE_BRANCH_DISTANCE / (parentDeal.secondAncestor ? 2 : 1), centerCoordinates)
     const parent2nodeId = 'tree_resourse_' + parentDeal.contractor.id
 
     // const ignoreNicknamesForParent2 = (ignoreNicknames || parents.resourse2.id === settings.partnerId || [parents.resourse2.parents?.resourse1?.id, parents.resourse2.parents?.resourse2?.id].includes(settings.partnerId))
@@ -151,8 +156,11 @@ function drawParents(parentDeal, childNodeId, centerCoordinates) {
 
     const childMainNodeId = 'childrenOf_' + orderedParents[0] + "_" + orderedParents[1]
 
-    const childMainNodeCoordinates = getVectorCoordinates(0, (TREE_BRANCH_DISTANCE) - TREE_BRANCH_DISTANCE * Math.pow(0.5, 1), centerCoordinates)
-    addNode({ id: childMainNodeId, size: 40, label: "Дети", x: childMainNodeCoordinates.x, y: childMainNodeCoordinates.y })
+    // const childMainNodeCoordinates = getVectorCoordinates(0, (TREE_BRANCH_DISTANCE) - TREE_BRANCH_DISTANCE * Math.pow(0.5, 1), centerCoordinates)
+    const childMainNodeCoordinates = { x: (parent2coordinates.x + parent1coordinates.x) / 2, y: (parent2coordinates.y + parent1coordinates.y) / 2 }
+    addNode({
+        id: childMainNodeId, size: 40, label: "Дети", x: childMainNodeCoordinates.x, y: childMainNodeCoordinates.y
+    })
 
     addEdge({ id1: childMainNodeId, id2: parent1nodeId, direction: 'to', length: 0 })
     addEdge({ id1: parent2nodeId, id2: childMainNodeId, direction: 'to', length: 0 })
@@ -197,7 +205,9 @@ function drawChildren(partners, parentId, parentCoordinates) {
         const partnerAngle = angles[partnerCount % angles.length]
         let newNode
 
-        const partnerCoordinates = getVectorCoordinates(partnerAngle, TREE_CHILD_BRANCH_DISTANCE, parentCoordinates)
+        let isSecondAncestor = partner.children.every(el => el.secondAncestor)
+
+        const partnerCoordinates = getVectorCoordinates(partnerAngle, TREE_CHILD_BRANCH_DISTANCE / (isSecondAncestor ? 2 : 1), parentCoordinates)
         const partnerNodeId = 'tree_resourse_' + partner.id
         // const ignoreNicknamesForPartner = (partner.id === settings.partnerId || partner.children.map(el => el.id).includes(settings.partnerId))
 
@@ -213,14 +223,12 @@ function drawChildren(partners, parentId, parentCoordinates) {
 
         }
 
-        const childMainNodeCoordinates = getVectorCoordinates(partnerAngle, TREE_CHILD_BRANCH_DISTANCE / 2, parentCoordinates)
+        const childMainNodeCoordinates = getVectorCoordinates(partnerAngle, TREE_CHILD_BRANCH_DISTANCE / (isSecondAncestor ? 4 : 2), parentCoordinates)
 
         const orderedParents = [partner.id, parentId].sort()
 
         const childMainNodeId = 'childrenOf_' + orderedParents[0] + "_" + orderedParents[1]
-        addNode({ id: childMainNodeId, size: 40, label: "Дети", coordinates: childMainNodeCoordinates })
-
-        let childCount = 0
+        const childNode = addNode({ id: childMainNodeId, size: 40, label: "Дети", coordinates: childMainNodeCoordinates })
 
         const currencies = {}
 
@@ -232,10 +240,13 @@ function drawChildren(partners, parentId, parentCoordinates) {
         })
 
         if (!existingChildNode) {
-            childNodes.push({ id: childMainNodeId, center: childMainNodeCoordinates, children: partner.children })
+            existingChildNode = { id: childMainNodeId, center: {x: childNode.node.x, y: childNode.node.y}, children: [] }
+            childNodes.push(existingChildNode)
         }
 
+
         partner.children.forEach(child => {
+            existingChildNode.children.push(child)
             if (!(child.currency.id in currencies)) {
                 currencies[child.currency.id] = { symbol: child.currency.symbol, gave: 0, received: 0 }
             }

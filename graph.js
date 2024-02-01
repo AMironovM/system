@@ -518,9 +518,9 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
         filterTopDeals(settings.filterByTop)
     }
 
-    drawCenterTree()
+    // drawCenterTree()
 
-    drawExternalCloud()
+    // drawExternalCloud()
 
     fillContractors()
 
@@ -538,12 +538,6 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
             currentNodes.clear()
         }
     }
-
-    // addUniverseDeals(pairs)
-
-    // if (user.id === settings.userDrawnId) {
-    //     addExternalDeals(pairs)
-    // }
 
     drawTree(ancestory)
 
@@ -563,42 +557,6 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
     //         group.deals.push(deal)
     //     }
     // })
-
-
-
-    // while (true) {
-    //     let nextPair = getPairWithMostTransactions(pairs, 'ПараКонтрагентов', 'inner_res_')
-
-    //     if (!nextPair) {
-    //         contragents.forEach((agent) => {
-    //             if (nodes.get('inner_res_' + agent.id) === null) {
-    //                 addToCircle(agent, totals)
-    //             }
-    //         })
-    //         break
-    //     } else {
-    //         addToCircle(nextPair.Resourse1, totals)
-    //         addToCircle(nextPair.Resourse2, totals)
-
-    //         last_resourse = nextPair.Resourse2
-    //         let nextResourse
-
-    //         while (true) {
-    //             nextResourse = getResourseWithMostDeals(pairs, last_resourse, 'ПараКонтрагентов', 'inner_res_').resourse
-
-    //             if (!nextResourse) {
-    //                 break
-    //             }
-
-    //             addToCircle(nextResourse, totals)
-    //             last_resourse = nextResourse
-    //         }
-    //     }
-    // }
-
-    // addContragentDeals(pairs)
-
-
 
     // if (stabilize) {
     //     network.moveTo({
@@ -2278,16 +2236,19 @@ export function addNode({ id, image = undefined, label = '', shape = 'circle', c
     const newNode = { id: id, image: image, label: label, font: font, x, y, shape: shape, borderWidth: 2, size: imageSize, initialSize: imageSize, color: color, widthConstraint: size, initialWidthConstraint: size, initialFontSize: fontSize, physics: physics, ...additionalParams, }
 
     let result = { id }
-    if (nodes.get(id)) {
+    let existingNode = nodes.get(id)
+    if (existingNode) {
         delete newNode.x
         delete newNode.y
         delete newNode.minAngle
         delete newNode.maxAngle
         nodes.update(newNode)
         result.isNew = false
+        result.node = existingNode
     } else {
         nodes.add(newNode)
         result.isNew = true
+        result.node = newNode
     }
 
     return result
