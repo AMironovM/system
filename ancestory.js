@@ -144,7 +144,7 @@ function drawChildren(partners, parentId, parentCoordinates) {
 
         const childMainNodeCoordinates = getVectorCoordinates(partnerAngle + 15 * (isEven ? 1 : -1), TREE_CHILD_BRANCH_DISTANCE / 2, parentCoordinates)
 
-        const orderedParents = [partner.id, parentId.replace('tree_resourse_','')].sort()
+        const orderedParents = [partner.id, parentId].sort()
 
         const childMainNodeId = 'childrenOf_' + orderedParents[0] + "_" + orderedParents[1]
         addNode({ id: childMainNodeId, size: 40, label: "Дети", coordinates: childMainNodeCoordinates })
@@ -225,22 +225,24 @@ function drawChildren(partners, parentId, parentCoordinates) {
             labelTo = labelTo.slice(0, -2)
         }
 
+        const parentNodeId = 'tree_resourse_' + parentId
+
         if (labelTo) {
-            addEdge({ id1: parentId, id2: partnerNodeId, direction: 'to', label: labelTo, length: TREE_CHILD_BRANCH_DISTANCE })
+            addEdge({ id1: parentNodeId, id2: partnerNodeId, direction: 'to', label: labelTo, length: TREE_CHILD_BRANCH_DISTANCE })
         }
         if (labelFrom) {
-            addEdge({ id1: parentId, id2: partnerNodeId, direction: 'from', label: labelFrom, length: TREE_CHILD_BRANCH_DISTANCE })
+            addEdge({ id1: partnerNodeId, id2: parentNodeId, direction: 'to', label: labelFrom, length: TREE_CHILD_BRANCH_DISTANCE })
         }
 
         if (!labelTo && !labelFrom) {
-            addEdge({ id1: parentId, id2: partnerNodeId, length: TREE_CHILD_BRANCH_DISTANCE })
+            addEdge({ id1: parentNodeId, id2: partnerNodeId, length: TREE_CHILD_BRANCH_DISTANCE })
         }
 
         if (labelTo) {
-            addEdge({ id1: childMainNodeId, id2: parentId, direction: "to", length: TREE_CHILD_BRANCH_DISTANCE / 60 })
+            addEdge({ id1: childMainNodeId, id2: parentNodeId, direction: "to", length: TREE_CHILD_BRANCH_DISTANCE / 60 })
             addEdge({ id1: partnerNodeId, id2: childMainNodeId, direction: "to", length: TREE_CHILD_BRANCH_DISTANCE / 60 })
         } else {
-            addEdge({ id1: parentId, id2: childMainNodeId, direction: "to", length: TREE_CHILD_BRANCH_DISTANCE / 60 })
+            addEdge({ id1: parentNodeId, id2: childMainNodeId, direction: "to", length: TREE_CHILD_BRANCH_DISTANCE / 60 })
             addEdge({ id1: childMainNodeId, id2: partnerNodeId, direction: "to", length: TREE_CHILD_BRANCH_DISTANCE / 60 })
         }
 
