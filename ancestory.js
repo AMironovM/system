@@ -14,7 +14,11 @@ let ancestoryDeals
 
 const childNodes = []
 
-export function drawTree(ancestory) {
+export function drawAncestoryTree(ancestory) {
+
+    if (!ancestory) {
+        return
+    }
 
     ancestoryDeals = ancestory
 

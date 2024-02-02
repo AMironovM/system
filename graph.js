@@ -11,8 +11,12 @@ import {
 } from './misc.js'
 
 import {
-    drawTree
+    drawAncestoryTree
 } from './ancestory.js'
+
+import {
+    drawBusinessTree
+} from './business.js'
 
 import {
     filterThoughts, addUserThoughts, addPartnerThoughts, addRestThoughts
@@ -24,7 +28,7 @@ const fpPromise = import('https://openfpcdn.io/fingerprintjs/v4')
 
 let hiddenGroups = []
 export let rawGraph
-let ancestory = {}
+
 let pairs
 let graph
 let users = []
@@ -500,7 +504,7 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
 
     graph = structuredClone(rawGraph)
     centerDeals = graph.centerDeals
-    ancestory = graph.ancestory2
+    const ancestory = graph.ancestory
     thoughts = graph.thoughts
     // thoughts = filterThoughts()
 
@@ -539,7 +543,8 @@ async function drawGraph(stabilize = false, removeBoard = false, defaultDelay = 
         }
     }
 
-    drawTree(ancestory)
+    drawAncestoryTree(ancestory)
+    drawBusinessTree(graph.business)
 
     // const centerTree = { deals: [], groups: [], dealsCount: 0 }
     // let last_resourse
@@ -2266,7 +2271,7 @@ export function addEdge({ dashes = false, id1, id2, label = '', smooth = undefin
     }
 }
 
-function getEdgeLabels(deals, resourseId) {
+export function getEdgeLabels(deals, resourseId) {
 
     if (!resourseId) {
         resourseId = deals[0].employer.id
