@@ -41,14 +41,14 @@ export function drawAncestoryTree(ancestory) {
 
     addNode(centerNode)
 
-    addFilterNode({ id: 'addSecondAncestors', label: 'Двоюродные', x: centerCoordinates.x, y: centerCoordinates.y - 300 }, settings.addSecondAncestors == true, centerNodeId)
+    addFilterNode({ id: 'addSecondAncestors', label: 'Двоюродные', x: centerCoordinates.x, y: centerCoordinates.y - 150 }, settings.addSecondAncestors == true, centerNodeId)
 
     function addFilterNode(node, filterOn, parentNodeId) {
         node.size = filterOn ? SIZES.NODE_BOX * 1.4 : SIZES.NODE_BOX * 0.7
         node.fontSize = filterOn ? 24 : 14
         node.opacity = filterOn ? 1 : 0.4
         addNode(node)
-        addEdge({ id1: node.id, id2: parentNodeId })
+        addEdge({ id1: node.id, id2: parentNodeId, length: -50 })
     }
 
     drawParentsAndChildren(settings.userDrawnId, centerCoordinates)
