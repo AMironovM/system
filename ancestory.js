@@ -18,7 +18,7 @@ export function drawAncestoryTree(ancestory) {
 
     if (!ancestory) {
         return
-    }
+    } 
 
     ancestoryDeals = ancestory
 
